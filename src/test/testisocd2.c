@@ -1,7 +1,7 @@
-/* 
-  Copyright (C) 2003-2008, 2012 Rocky Bernstein 
+/*
+  Copyright (C) 2003-2008, 2012-2013 Rocky Bernstein
   <rocky@gnu.org>
-  
+
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
@@ -47,8 +47,8 @@
 #include <cdio/cd_types.h>
 #include "filemode.h"
 
-/* Set up a CD-DA image to test on which is in the libcdio distribution. */
-#define ISO9660_IMAGE_PATH "/src/external-vcs/libcdio/test/data/"
+/* Set up a CD image to test on which is in the libcdio distribution. */
+#define ISO9660_IMAGE_PATH "/src/external-vcs/savannah/libcdio/test/data/"
 #define ISO9660_IMAGE ISO9660_IMAGE_PATH "copying.iso"
 
 #define SKIP_TEST_RC 77
@@ -58,12 +58,28 @@ main(int argc, const char *argv[])
 {
   iso9660_t *p_iso;
 
-  p_iso = iso9660_open (ISO9660_IMAGE);
+  p_iso = iso9660_open(ISO9660_IMAGE);
   if (!p_iso) {
-    fprintf(stderr, "Sorry, couldn't open ISO9660 image %s\n", 
+    fprintf(stderr, "Sorry, couldn't open ISO9660 image %s\n",
 	    ISO9660_IMAGE);
     return 1;
   } else {
+    uint8_t joliet_level = iso9660_ifs_get_joliet_level(p_iso);
+    if (joliet_level != 0) {
+      printf("Expecting joliet level to be 0, got %u\n", joliet_level);
+      exit(10);
+    } else {
+      printf("-- No joliet, as expected.\n");
+    }
+    p_iso = iso9660_open_ext(ISO9660_IMAGE, ISO_EXTENSION_ALL);
+    joliet_level = iso9660_ifs_get_joliet_level(p_iso);
+    if ( joliet_level != 0) {
+      printf("Expecting joliet level to still be 0, got %d\n", joliet_level);
+      exit(11);
+    } else {
+      printf("-- joliet level 0 again, as expected.\n");
+    }
+
     /* You make get different results looking up "/" versus "/." and the
        latter may give more complete information. "/" will take information
        from the PVD only, whereas "/." will force a directory read of "/" and
@@ -73,7 +89,7 @@ main(int argc, const char *argv[])
        iso9660_stat_t *p_statbuf = iso9660_ifs_stat (p_iso, "/.");
 
     if (NULL == p_statbuf) {
-      fprintf(stderr, 
+      fprintf(stderr,
 	      "Could not get ISO-9660 file information for file /.\n");
       iso9660_close(p_iso);
       exit(2);
@@ -83,20 +99,20 @@ main(int argc, const char *argv[])
       char *psz_path = NULL;
       const lsn_t i_lsn = p_statbuf->lsn;
       const iso9660_stat_t *p_statbuf2 = iso9660_ifs_find_lsn (p_iso, i_lsn);
-      const iso9660_stat_t *p_statbuf3 = 
+      const iso9660_stat_t *p_statbuf3 =
 	iso9660_ifs_find_lsn_with_path (p_iso, i_lsn, &psz_path);
 
       /* Compare the two statbufs. */
-      if (p_statbuf->lsn != p_statbuf2->lsn || 
+      if (p_statbuf->lsn != p_statbuf2->lsn ||
 	  p_statbuf->size != p_statbuf2->size ||
 	  p_statbuf->type != p_statbuf2->type) {
-	  
+
 	  fprintf(stderr, "File stat information between fs_stat and "
 		  "iso9660_ifs_find_lsn isn't the same\n");
 	  exit(3);
       }
 
-      if (p_statbuf3->lsn != p_statbuf2->lsn || 
+      if (p_statbuf3->lsn != p_statbuf2->lsn ||
 	  p_statbuf3->size != p_statbuf2->size ||
 	  p_statbuf3->type != p_statbuf2->type) {
 	  exit(4);
@@ -113,7 +129,7 @@ main(int argc, const char *argv[])
 	fprintf(stderr, "Path returned for fs_find_lsn_with_path is NULL\n");
 	exit(6);
       }
-      
+
       /* Try reading from the directory. */
       memset (buf, 0, ISO_BLOCKSIZE);
       if ( ISO_BLOCKSIZE != iso9660_iso_seek_read (p_iso, buf, i_lsn, 1) )
@@ -125,6 +141,6 @@ main(int argc, const char *argv[])
       exit(0);
     }
   }
-  
+
   exit(0);
 }

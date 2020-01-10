@@ -1,6 +1,6 @@
 /*
-  Copyright (C) 2003, 2004, 2005, 2006, 2009 Rocky Bernstein <rocky@gnu.org>
-  
+  Copyright (C) 2003-2006, 2009, 2013 Rocky Bernstein <rocky@gnu.org>
+
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
@@ -22,14 +22,14 @@
    to use. Otherwise a compiled-in default image name (that
    comes with the libcdio distribution) will be used.
 
-   This program can be compiled with either a C or C++ compiler. In 
+   This program can be compiled with either a C or C++ compiler. In
    the distribution we prefer C++ just to make sure we haven't broken
    things on the C++ side.
  */
 
 /* This is the CD-image with an ISO-9660 filesystem */
 #define ISO9660_IMAGE_PATH "../"
-#define ISO9660_IMAGE ISO9660_IMAGE_PATH "test/isofs-m1.cue"
+#define ISO9660_IMAGE ISO9660_IMAGE_PATH "test/data/isofs-m1.cue"
 
 #define ISO9660_PATH "/"
 #define ISO9660_FILENAME "COPYING"
@@ -63,6 +63,7 @@
 
 #include <cdio/cdio.h>
 #include <cdio/iso9660.h>
+#include <cdio/logging.h>
 
 #define CEILING(x, y) ((x+(y-1))/y)
 
@@ -71,7 +72,7 @@
   free(p_statbuf);				\
   cdio_destroy(p_cdio);				\
   return rc;					\
-  
+
 
 int
 main(int argc, const char *argv[])
@@ -85,25 +86,27 @@ main(int argc, const char *argv[])
   char untranslated_name[256] = ISO9660_PATH;
   CdIo_t *p_cdio;
   unsigned int i_fname=sizeof(ISO9660_FILENAME);
-  
+
   if (argc > 3) {
     printf("usage %s [CD-ROM-or-image [filename]]\n", argv[0]);
     printf("Extracts filename from CD-ROM-or-image.\n");
     return 1;
   }
-  
-  if (argc > 1) 
+
+  if (argc > 1)
     psz_image = argv[1];
-  else 
+  else
     psz_image = ISO9660_IMAGE;
 
   if (argc > 2) {
     psz_fname = argv[2];
-    i_fname   = strlen(psz_fname)+1;    
-  } else 
+    i_fname   = strlen(psz_fname)+1;
+  } else
     psz_fname = ISO9660_FILENAME;
 
   strncat(untranslated_name, psz_fname, i_fname);
+
+  // cdio_loglevel_default = CDIO_LOG_DEBUG;
 
   p_cdio = cdio_open (psz_image, DRIVER_UNKNOWN);
   if (!p_cdio) {
@@ -113,9 +116,9 @@ main(int argc, const char *argv[])
 
   p_statbuf = iso9660_fs_stat (p_cdio, untranslated_name);
 
-  if (NULL == p_statbuf) 
+  if (NULL == p_statbuf)
     {
-      fprintf(stderr, 
+      fprintf(stderr,
 	      "Could not get ISO-9660 file information for file %s\n",
 	      untranslated_name);
       cdio_destroy(p_cdio);
@@ -123,9 +126,8 @@ main(int argc, const char *argv[])
     }
 
   iso9660_name_translate(psz_fname, translated_name);
-  
-  if (!(p_outfd = fopen (translated_name, "wb")))
-    {
+
+  if (!(p_outfd = fopen (translated_name, "wb"))) {
       perror ("fopen()");
       cdio_destroy(p_cdio);
       free(p_statbuf);
@@ -135,32 +137,29 @@ main(int argc, const char *argv[])
   /* Copy the blocks from the ISO-9660 filesystem to the local filesystem. */
   {
     const unsigned int i_blocks = CEILING(p_statbuf->size, ISO_BLOCKSIZE);
-    for (i = 0; i < i_blocks; i ++)
-      {
+    for (i = 0; i < i_blocks; i ++) {
 	char buf[ISO_BLOCKSIZE];
 	const lsn_t lsn = p_statbuf->lsn + i;
-	
+
 	memset (buf, 0, ISO_BLOCKSIZE);
-	
+
 	if ( 0 != cdio_read_data_sectors (p_cdio, buf, lsn, ISO_BLOCKSIZE, 1) )
 	  {
 	    fprintf(stderr, "Error reading ISO 9660 file at lsn %lu\n",
 		    (long unsigned int) p_statbuf->lsn);
 	    my_exit(4);
 	  }
-	
-	
+
 	fwrite (buf, ISO_BLOCKSIZE, 1, p_outfd);
-	
-	if (ferror (p_outfd))
-	  {
+
+	if (ferror (p_outfd)) {
 	    perror ("fwrite()");
 	    my_exit(5);
-	  }
+	}
       }
   }
-  
-  
+
+
   fflush (p_outfd);
 
   /* Make sure the file size has the exact same byte size. Without the
@@ -169,7 +168,7 @@ main(int argc, const char *argv[])
   if (ftruncate (fileno (p_outfd), p_statbuf->size))
     perror ("ftruncate()");
 
-  printf("Extraction of file '%s' from '%s' successful.\n", 
+  printf("-- Extraction of file '%s' from '%s' successful.\n",
 	 translated_name, untranslated_name);
 
   my_exit(0);

@@ -45,7 +45,7 @@
 #include "helper.h"
 
 #ifndef DATA_DIR
-#define DATA_DIR "/src/external-vcs/libcdio/test/data"
+#define DATA_DIR "/src/external-vcs/savannah/libcdio/test/data"
 #endif
 
 #define NUM_GOOD_TOCS 17

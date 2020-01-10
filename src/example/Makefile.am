@@ -1,4 +1,4 @@
-#   Copyright (C) 2003, 2004, 2005, 2006, 2008, 2009, 2012
+#   Copyright (C) 2003-2006, 2008-2009, 2012-13
 #   Rocky Bernstein <rocky@gnu.org>
 #
 #   This program is free software: you can redistribute it and/or modify
@@ -33,10 +33,12 @@ noinst_PROGRAMS = \
 	eject \
 	extract \
 	isofile \
+	isorr \
 	isofile2 \
 	isofuzzy \
 	isolist \
 	isolsn \
+	logging \
 	mmc1 \
 	mmc2 \
 	mmc2a \
@@ -47,7 +49,7 @@ noinst_PROGRAMS = \
 	udf1 \
 	udffile
 
-check_PROGRAMS  = cdtext device drives \
+check_PROGRAMS  = cdtext device drives isofile2 \
                    mmc1 mmc2 mmc2a mmc3 sample4
 
 #: run regression tests. "test" is the same thing as "check"
@@ -58,7 +60,7 @@ check-short:
 	$(MAKE) check 2>&1  | ruby @abs_top_srcdir@/make-check-filter.rb
 
 
-INCLUDES = $(LIBCDIO_CFLAGS)
+AM_CPPFLAGS = $(LIBCDIO_CFLAGS)
 
 audio_DEPENDENCIES    = $(LIBCDIO_DEPS)
 audio_LDADD           = $(LIBCDIO_LIBS) $(LTLIBICONV)
@@ -87,11 +89,16 @@ eject_LDADD           = $(LIBCDIO_LIBS) $(LTLIBICONV)
 extract_DEPENDENCIES  = $(LIBISO9660_LIBS) $(LIBUDF_LIBS) $(LIBCDIO_DEPS)
 extract_LDADD         = $(LIBISO9660_LIBS) $(LIBUDF_LIBS) $(LIBCDIO_LIBS) $(LTLIBICONV)
 
+isorr_LDADD    = $(LIBISO9660_LIBS) $(LIBCDIO_LIBS) $(LTLIBICONV)
+
 isofile_LDADD    = $(LIBISO9660_LIBS) $(LIBCDIO_LIBS) $(LTLIBICONV)
 isofile2_LDADD   = $(LIBISO9660_LIBS) $(LIBCDIO_LIBS) $(LTLIBICONV)
 isofuzzy_LDADD   = $(LIBISO9660_LIBS) $(LIBCDIO_LIBS) $(LTLIBICONV)
 isolist_LDADD    = $(LIBISO9660_LIBS) $(LIBCDIO_LIBS) $(LTLIBICONV)
 isolsn_LDADD     = $(LIBISO9660_LIBS) $(LIBCDIO_LIBS) $(LTLIBICONV)
+
+logging_DEPENDENCIES = $(LIBCDIO_DEPS)
+logging_LDADD        = $(LIBCDIO_LIBS) $(LTLIBICONV)
 
 mmc1_DEPENDENCIES = $(LIBCDIO_DEPS)
 mmc1_LDADD        = $(LIBCDIO_LIBS) $(LTLIBICONV)

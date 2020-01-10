@@ -1,5 +1,4 @@
 #!/bin/sh
-#$Id: check_iso.sh.in,v 1.15 2008/10/17 01:51:47 rocky Exp $
 
 if test -z $srcdir ; then
   srcdir=`pwd`
@@ -28,10 +27,15 @@ test_iso_read  "$opts" ${fname} ${srcdir}/copying.gpl
 RC=$?
 check_result $RC 'iso-read basic test' "$ISO_READ $opts"
 
-if test -n ""; then
+if test -n "1"; then
   fname=copying-rr
+  if test -n ""; then
+      right_file=${fname}-mingw.right
+  else
+      right_file=${fname}.right
+  fi
   opts="--quiet ${srcdir}/data/${fname}.iso --iso9660 "
-  test_iso_info  "$opts" ${fname}.dump ${srcdir}/${fname}.right
+  test_iso_info  "$opts" ${fname}.dump ${srcdir}/${right_file}
   RC=$?
   check_result $RC 'iso-info Rock Ridge test' "$ISO_INFO $opts"
 

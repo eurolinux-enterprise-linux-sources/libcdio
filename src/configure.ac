@@ -1,4 +1,4 @@
-dnl Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008, 2010, 2011, 2012
+dnl Copyright (C) 2003-2008, 2010, 2011-2013
 dnl Rocky Bernstein <rocky@gnu.org>
 dnl
 dnl This program is free software; you can redistribute it and/or modify
@@ -16,7 +16,7 @@ dnl along with this program; if not, write to the Free Software
 dnl Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 dnl 02110-1301 USA.
 
-define(RELEASE_NUM, 90)
+define(RELEASE_NUM, 92)
 define(CDIO_VERSION_STR, 0.$1)
 
 AC_PREREQ(2.61)
@@ -26,7 +26,7 @@ AC_CONFIG_SRCDIR(src/cd-info.c)
 AM_INIT_AUTOMAKE([foreign])
 
 AC_CANONICAL_HOST
-AM_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_MACRO_DIR([m4])
 
 # Enable silent build rules by default (Automake v1.11 or later).
@@ -38,7 +38,6 @@ LIBCDIO_VERSION_NUM=`echo RELEASE_NUM | cut -d . -f 1 | tr -d a-z`
 AC_SUBST(LIBCDIO_VERSION_NUM)
 
 AM_MISSING_PROG(HELP2MAN, help2man, $missing_dir)
-AM_MISSING_PROG(GIT2CL, git2cl, $missing_dir)
 AM_MAINTAINER_MODE
 
 AM_SANITY_CHECK
@@ -84,11 +83,19 @@ AC_ARG_ENABLE(example-progs,
 
 AM_CONDITIONAL(BUILD_EXAMPLES, test "x$enable_example_progs" != "xno")
 
-dnl We use C 
+dnl We use C
 AC_PROG_CC
 AM_PROG_CC_C_O
-dnl We also use C++ in example programs and for CXX bindings
-AC_PROG_CXX
+
+if test "x$enable_cxx" != "xno" ; then
+  AC_PROG_CXX
+else
+  am__fastdepCXX_TRUE='#'
+  am__fastdepCXX_FALSE=
+fi
+
+dnl For iso_read test
+AC_CHECK_PROGS(ISO_MAKING_COMMAND, genisoimage mkisofs)
 
 dnl Checks for programs.
 AC_AIX
@@ -131,10 +138,10 @@ DIFF_OPTS=
 
 if test "x$DIFF" = "xno"; then
    AC_PATH_PROG(DIFF, cmp, no)
-else 
+else
   # Try for GNU diff options.
   # MSDOG output uses \r\n rather than \n in tests
-  for diff_opt in -w --unified ; do 
+  for diff_opt in -w --unified ; do
     if $DIFF $diff_opt ./configure ./configure > /dev/null 2>&1; then
       AC_MSG_RESULT([adding $diff_opt to diff in regression tests])
       DIFF_OPTS="$DIFF_OPTS $diff_opt"
@@ -143,6 +150,7 @@ else
 fi
 AC_SUBST(DIFF)
 AC_SUBST(DIFF_OPTS)
+AC_SUBST(RM)
 
 dnl check for large file support
 AC_SYS_LARGEFILE
@@ -162,7 +170,7 @@ if test "x$ac_cv_sys_largefiles" = "xyes"; then
     CPPFLAGS="$CPPFLAGS $LIBCDIO_LARGEFILE_FLAGS"
 fi
 
-AC_DEFINE(LIBCDIO_CONFIG_H, 1, 
+AC_DEFINE(LIBCDIO_CONFIG_H, 1,
   [Is set when libcdio's config.h has been included. Applications wishing to sue their own config.h values (such as set by the application's configure script can define this before including any of libcdio's headers.])
 
 dnl headers
@@ -173,7 +181,7 @@ AC_CHECK_HEADERS(stdarg.h stdbool.h stdio.h sys/cdio.h sys/param.h \
 		 sys/time.h sys/timeb.h sys/utsname.h)
 
 ## FreeBSD 4 has getopt in unistd.h. So we include that before
-## getopt.h 
+## getopt.h
 AC_CHECK_HEADERS(unistd.h getopt.h)
 
 AC_SUBST(SBPCD_H)
@@ -188,14 +196,14 @@ AC_C_INLINE
 ## ISOC99_PRAGMA
 AC_MSG_CHECKING([whether $CC supports ISOC99 _Pragma()])
 AC_TRY_COMPILE([],[_Pragma("pack(1)")], [
-  ISOC99_PRAGMA=yes 
+  ISOC99_PRAGMA=yes
   AC_DEFINE(HAVE_ISOC99_PRAGMA, [], [Supports ISO _Pragma() macro])
 ],ISOC99_PRAGMA=no)
 AC_MSG_RESULT($ISOC99_PRAGMA)
 
 ## Check for Windows header files
 AC_CHECK_HEADERS([ntddcdrm.h ddk/ntddcdrm.h \
-                  ntddscsi.h ddk/ntddscsi.h ddk/scsi.h], 
+                  ntddscsi.h ddk/ntddscsi.h ddk/scsi.h],
 [], [], [AC_INCLUDES_DEFAULT
 #include <windows.h>
 ])
@@ -243,7 +251,7 @@ fi
 if test "x$empty_array_size" = "xxxx"; then
   AC_MSG_ERROR([compiler is unable to creaty empty arrays])
 else
-  AC_DEFINE_UNQUOTED(EMPTY_ARRAY_SIZE, $empty_array_size, 
+  AC_DEFINE_UNQUOTED(EMPTY_ARRAY_SIZE, $empty_array_size,
 	[what to put between the brackets for empty arrays])
   changequote(`,')
   msg="[${empty_array_size}]"
@@ -274,17 +282,17 @@ if test "x$with_gnu_ld" != "xyes"; then
    enable_versioned_libs='no'
 fi
 # We also need GNU make to build versioned symbols.
-if test "x$enable_versioned_libs" = "xyes"; then 
+if test "x$enable_versioned_libs" = "xyes"; then
   if test -n "$MAKE" ; then
     $MAKE --version 2>/dev/null >/dev/null
     if test "$?" -ne 0 ; then
-       AC_MSG_ERROR(Either set MAKE variable to GNU make or use 
+       AC_MSG_ERROR(Either set MAKE variable to GNU make or use
    --without-versioned-libs option)
     fi
-  else 
+  else
     make --version 2>/dev/null >/dev/null
     if test "$?" -ne 0 ; then
-       AC_MSG_ERROR(Either set MAKE variable to GNU make or use 
+       AC_MSG_ERROR(Either set MAKE variable to GNU make or use
    --without-versioned-libs option)
     fi
   fi
@@ -302,7 +310,7 @@ AM_CONDITIONAL(BUILD_VERSIONED_LIBS, test "x$enable_versioned_libs" = "xyes")
 AM_CONDITIONAL(DISABLE_CPP, test "x$disable_cpp" = "xyes")
 
 dnl Checks for header files.
-     
+
 LIBCDIO_CDDA_LIBS='$(top_builddir)/lib/cdda_interface/libcdio_cdda.la'
 LIBCDIO_CFLAGS='-I$(top_srcdir)/lib/driver -I$(top_builddir)/include -I$(top_srcdir)/include/'
 LIBCDIO_LIBS='$(top_builddir)/lib/driver/libcdio.la'
@@ -360,9 +368,9 @@ case $host_os in
        ##     [Define 1 if you have AIX CD-ROM support])
        ;;
      darwin[[6-9]].*|darwin1[[0-2]].*)
-       AC_CHECK_HEADERS(IOKit/IOKitLib.h CoreFoundation/CFBase.h, 
+       AC_CHECK_HEADERS(IOKit/IOKitLib.h CoreFoundation/CFBase.h,
                         [have_iokit_h="yes"])
-       if test "x$have_iokit_h" = "xyes" ; then 
+       if test "x$have_iokit_h" = "xyes" ; then
          AC_DEFINE([HAVE_DARWIN_CDROM], [1],
 	      [Define 1 if you have Darwin OS X-type CD-ROM support])
 	 DARWIN_PKG_LIB_HACK="-Wl,-framework,CoreFoundation -Wl,-framework,IOKit"
@@ -393,9 +401,9 @@ case $host_os in
 #include <linux/cdrom.h>
 struct cdrom_generic_command test;
 int has_timeout=sizeof(test.timeout);],
-            [AC_DEFINE([HAVE_LINUX_CDROM_TIMEOUT], [1], 
+            [AC_DEFINE([HAVE_LINUX_CDROM_TIMEOUT], [1],
                    [Define 1 if timeout is in cdrom_generic_command struct])])
-	   AC_DEFINE([HAVE_LINUX_CDROM], [1], 
+	   AC_DEFINE([HAVE_LINUX_CDROM], [1],
                      [Define 1 if you have Linux-type CD-ROM support])
 	   cd_drivers="${cd_drivers}, GNU/Linux"
 	fi
@@ -403,7 +411,7 @@ int has_timeout=sizeof(test.timeout);],
      bsdi*)
         AC_CHECK_HEADERS(dvd.h, [have_bsdi_dvd_h="yes"])
 	if test "x$have_bsdi_dvd_h" = "xyes" ; then
-     	  AC_DEFINE([HAVE_BSDI_CDROM], [1], 
+     	  AC_DEFINE([HAVE_BSDI_CDROM], [1],
                     [Define 1 if you have BSDI-type CD-ROM support])
 	 LIBS="$LIBS -ldvd -lcdrom"
          LIBCDIO_LIBS="$LIBCDIO_LIBS  -lcdrom"
@@ -411,31 +419,44 @@ int has_timeout=sizeof(test.timeout);],
 	fi
 	;;
      sunos*|sun*|solaris*)
-     	AC_DEFINE([HAVE_SOLARIS_CDROM], [1], 
+     	AC_DEFINE([HAVE_SOLARIS_CDROM], [1],
                   [Define 1 if you have Solaris CD-ROM support])
 	  cd_drivers="${cd_drivers}, Solaris"
 	;;
      cygwin*)
-	AC_DEFINE([CYGWIN], [1], 
+	AC_DEFINE([CYGWIN], [1],
                   [Define 1 if you are compiling using cygwin])
-     	AC_DEFINE([HAVE_WIN32_CDROM], [1], 
+     	AC_DEFINE([HAVE_WIN32_CDROM], [1],
                   [Define 1 if you have MinGW CD-ROM support])
  	LIBS="$LIBS -lwinmm"
  	LT_NO_UNDEFINED="-no-undefined"
   	cd_drivers="${cd_drivers}, MinGW"
-     	AC_DEFINE([NEED_TIMEZONEVAR], [1], 
+     	AC_DEFINE([NEED_TIMEZONEVAR], [1],
                   [Define 1 if you need timezone defined to get timzone
 		   defined as a variable. In cygwin it is a function too])
 	;;
      mingw*)
+        AC_MSG_CHECKING(for MinGW-w64 headers)
+        AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+#include <stdio.h>
+#if !defined(__MINGW64_VERSION_MAJOR)
+# error not mingw-w64 headers
+#endif])],
+          [ AC_MSG_RESULT(yes)
+            MINGW_W64_HEADERS=yes
+            AC_DEFINE(MINGW_W64_HEADERS, [], [Define this if mingw-w64 headers are used]) ],
+          [ AC_MSG_RESULT(no)
+            MINGW_W64_HEADERS=no
+          ])
         # regression tests need native-style absolute paths.
         # $native_srcdir is used here.
 	native_abs_top_srcdir=$(cd $srcdir; /bin/bash.exe -c 'builtin pwd -W')
 
 	AC_CHECK_HEADERS(windows.h)
-	AC_DEFINE([MINGW32], [1], 
+	AC_DEFINE([MINGW32], [1],
                   [Define 1 if you are compiling using MinGW])
-	AC_DEFINE([HAVE_WIN32_CDROM], [1], 
+	MINGW32=1
+	AC_DEFINE([HAVE_WIN32_CDROM], [1],
                   [Define 1 if you have MinGW CD-ROM support])
 	LIBS="$LIBS -lwinmm"
 	LT_NO_UNDEFINED="-no-undefined"
@@ -443,8 +464,14 @@ int has_timeout=sizeof(test.timeout);],
 	## Cross-platform LFS support in MinGW requires an override of off_t
 	if test "x$enable_largefile" != "xno"; then
 	  AC_MSG_RESULT([enabling support for large files (_FILE_OFFSET_BITS=64)])
-	  LIBCDIO_CFLAGS+=' -D_FILE_OFFSET_BITS=64 -D_OFF_T_DEFINED -D_OFF_T_ -D_off_t=off64_t -Doff_t=off64_t'
-	  LIBISO9660_CFLAGS+=' -D_FILE_OFFSET_BITS=64 -D_OFF_T_DEFINED -D_OFF_T_ -D_off_t=off64_t -Doff_t=off64_t'
+          if test "x$MINGW_W64_HEADERS" = "xyes"
+          then
+	    LIBCDIO_CFLAGS+=' -D_FILE_OFFSET_BITS=64 '
+	    LIBISO9660_CFLAGS+=' -D_FILE_OFFSET_BITS=64 '
+          else
+	    LIBCDIO_CFLAGS+=' -D_FILE_OFFSET_BITS=64 -D_OFF_T_DEFINED -D_OFF_T_ -D_off_t=off64_t -Doff_t=off64_t'
+	    LIBISO9660_CFLAGS+=' -D_FILE_OFFSET_BITS=64 -D_OFF_T_DEFINED -D_OFF_T_ -D_off_t=off64_t -Doff_t=off64_t'
+          fi
 	fi
 	joliet_supported="yes"
 	if test "x$enable_cdda_player" = "xyes"; then
@@ -453,13 +480,13 @@ int has_timeout=sizeof(test.timeout);],
 	enable_cdda_player="no"
 	;;
      freebsd4.*|freebsd5.*|freebsd[[6-9]].*|dragonfly*|kfreebsd*)
-     	AC_DEFINE([HAVE_FREEBSD_CDROM], [1], 
+     	AC_DEFINE([HAVE_FREEBSD_CDROM], [1],
                   [Define 1 if you have FreeBSD CD-ROM support])
  	LIBS="$LIBS -lcam"
   	cd_drivers="${cd_drivers}, FreeBSD "
 	;;
      netbsd*)
-     	AC_DEFINE([HAVE_NETBSD_CDROM], [1], 
+     	AC_DEFINE([HAVE_NETBSD_CDROM], [1],
                   [Define 1 if you have NetBSD CD-ROM support])
  	# LIBS="$LIBS -lcam"
   	cd_drivers="${cd_drivers}, NetBSD "
@@ -491,11 +518,11 @@ AC_LINK_IFELSE([AC_LANG_SOURCE([[
 extern long timezone;
 int main(int argc, char **argv) {
   long test_timezone = timezone;
-  return 0; 
+  return 0;
 }
 ]])
-], [AC_MSG_RESULT(yes); 
-   AC_DEFINE([HAVE_TIMEZONE_VAR], 1, 
+], [AC_MSG_RESULT(yes);
+   AC_DEFINE([HAVE_TIMEZONE_VAR], 1,
 	[Define if you have an extern long timenzone variable.])],
    [AC_MSG_RESULT(no)])
 dnl
@@ -562,9 +589,9 @@ if test "x${enable_joliet}" != "xno"; then
   if test "x$am_cv_func_iconv" = "xyes"; then
      joliet_supported="yes"
   fi
-  if test "x$joliet_supported" = "xyes"; then 
-     AC_DEFINE(HAVE_JOLIET, [1], 
-     [Define 1 if you want ISO-9660 Joliet extension support. 
+  if test "x$joliet_supported" = "xyes"; then
+     AC_DEFINE(HAVE_JOLIET, [1],
+     [Define 1 if you want ISO-9660 Joliet extension support.
      On most platforms, this requires libiconv to be installed.])
      HAVE_JOLIET=1
   else
@@ -575,13 +602,14 @@ AC_SUBST(HAVE_JOLIET)
 
 AC_ARG_ENABLE(rock,
 	AC_HELP_STRING([--enable-rock], [include Rock-Ridge extension support (default enabled)]),
-	enable_rock=$enableval, enable_rock=no)
+	enable_rock=$enableval, enable_rock=yes)
 if test "x${enable_rock}" != "xno"; then
-   AC_DEFINE(HAVE_ROCK, [1], 
+   AC_DEFINE(HAVE_ROCK, [1],
    [Define 1 if you want ISO-9660 Rock-Ridge extension support.])
    HAVE_ROCK=1
 fi
 AC_SUBST(HAVE_ROCK)
+AC_SUBST(MINGW32)
 AM_CONDITIONAL(ENABLE_ROCK, test "x$enable_rock" = "xyes")
 
 AC_ARG_ENABLE(cddb,
@@ -589,7 +617,7 @@ AC_ARG_ENABLE(cddb,
 	enable_cddb=$enableval, enable_cddb=check)
 if test "x$enable_cddb" != "xno"; then
    PKG_CHECK_MODULES(CDDB, libcddb >= 1.0.1, [
-    HAVE_CDDB=yes 
+    HAVE_CDDB=yes
     AC_DEFINE(HAVE_CDDB, [], [Define this if you have libcddb installed])
     ],
     [AC_MSG_WARN([new enough libcddb not found. CDDB access disabled. Get libcddb from http://libcddb.sourceforge.net])
@@ -604,11 +632,11 @@ AC_SUBST(CDDB_LIBS)
 # We have to disable cdda_player unless we have either ncurses.h or
 # curses.h
 have_ncurses_h='no'
-if test "x$enable_cdda_player" = "xyes"; then 
+if test "x$enable_cdda_player" = "xyes"; then
     enable_cdda_player='no'
-    AC_CHECK_HEADERS(ncurses.h, 
+    AC_CHECK_HEADERS(ncurses.h,
 		   [enable_cdda_player='yes'; have_ncurses_h='yes'],
-		   [AC_CHECK_HEADERS(curses.h, 
+		   [AC_CHECK_HEADERS(curses.h,
 		                    [enable_cdda_player='yes'],
 				    [AC_CHECK_HEADERS(ncurses/ncurses.h,
 				                      enable_cdda_player='yes')
@@ -618,22 +646,22 @@ fi
 AC_DEFINE(HAVE_KEYPAD, [], [Define this if your libcurses has keypad])
 if test "x$enable_cdda_player" = "xyes"; then
     if test "x$have_ncurses_h" = "xyes"; then
-      AC_CHECK_LIB(ncurses, mvprintw, 
+      AC_CHECK_LIB(ncurses, mvprintw,
         [LIBCURSES=ncurses; CDDA_PLAYER_LIBS="$CDDA_PLAYER_LIBS -lncurses"],
-        AC_CHECK_LIB(curses, mvprintw, 
-                     [LIBCURSES=curses; 
+        AC_CHECK_LIB(curses, mvprintw,
+                     [LIBCURSES=curses;
                        CDDA_PLAYER_LIBS="$CDDA_PLAYER_LIBS -lcurses"],
                      [AC_MSG_WARN([Will not build cdda-player - did not find libncurses or libcurses])
                      enable_cdda_player=no]))
-    else  
-        AC_CHECK_LIB(curses, mvprintw, 
-                     [LIBCURSES=curses; 
+    else
+        AC_CHECK_LIB(curses, mvprintw,
+                     [LIBCURSES=curses;
                      CDDA_PLAYER_LIBS="$CDDA_PLAYER_LIBS -lcurses"],
                      [AC_MSG_WARN([Will not build cdda-player - did not find libcurses])])
     fi
     if test "x$enable_cdda_player" = "xyes"; then
       AC_CHECK_LIB($LIBCURSES, keypad, [HAVE_KEYPAD=yes])
-    fi   
+    fi
 fi
 
 AM_CONDITIONAL(BUILD_CDDA_PLAYER, test "x$enable_cdda_player" = "xyes")
@@ -644,10 +672,10 @@ AC_ARG_ENABLE(vcd_info,
 		enable_vcd_info=${enableval},
 		enable_vcd_info=no)
 if test "x$enable_vcd_info" = "xyes"; then
-  PKG_CHECK_MODULES(VCDINFO, libvcdinfo >= 0.7.21, 
-  [AC_DEFINE([HAVE_VCDINFO],1, 
-  [Define this if you have libvcdinfo installed])], 
-  [AC_MSG_WARN(a new enough libvcdinfo not found. 
+  PKG_CHECK_MODULES(VCDINFO, libvcdinfo >= 0.7.21,
+  [AC_DEFINE([HAVE_VCDINFO],1,
+  [Define this if you have libvcdinfo installed])],
+  [AC_MSG_WARN(a new enough libvcdinfo not found.
 VCD info display in cd-info disabled.
 libvcdinfo is part of vcdimager. Get it from http://vcdimager.org)
    enable_vcd_info=no])
@@ -659,9 +687,9 @@ AC_SUBST(VCDINFO_CFLAGS)
 dnl
 dnl Newest automake workaround - needed for multi-language manual pages
 dnl
-AC_SUBST(mkdir_p)
+AC_SUBST(mkdir_p, "${MKDIR_P}")
 
-AC_CONFIG_COMMANDS([checks], 
+AC_CONFIG_COMMANDS([checks],
 		   [chmod +x test/check_cue.sh; chmod +x test/check_nrg.sh
 		   ])
 
@@ -671,8 +699,6 @@ dnl
 ## AC_CONFIG_FILES([  po/Makefile.in\
 AC_CONFIG_FILES([
        Makefile \
-       example/C++/Makefile \
-       example/C++/OO/Makefile \
        example/Makefile \
        include/Makefile \
        include/cdio/Makefile \
@@ -681,14 +707,11 @@ AC_CONFIG_FILES([
        doc/doxygen/Doxyfile \
        doc/Makefile \
        lib/Makefile \
-       lib/cdio++/Makefile \
        lib/driver/Makefile \
        lib/iso9660/Makefile \
        lib/udf/Makefile \
        libcdio.pc \
-       libcdio++.pc \
        libiso9660.pc \
-       libiso9660++.pc \
        libudf.pc \
        package/libcdio.spec \
        src/Makefile \
@@ -698,17 +721,33 @@ AC_CONFIG_FILES([
        test/driver/bincue.c \
        test/driver/cdrdao.c \
        test/driver/nrg.c \
+       test/driver/track.c \
        test/testgetdevices.c \
+       test/testisocd_joliet.c \
+       test/testisorr.c \
        test/testisocd2.c \
        test/testpregap.c \
+       test/testudf.c \
        test/Makefile \
        ])
+
+if test "x$enable_cxx" != "xno" ; then
+   AC_CONFIG_FILES([
+      example/C++/Makefile \
+      example/C++/OO/Makefile \
+      lib/cdio++/Makefile \
+      libcdio++.pc \
+      libiso9660++.pc \
+   ])
+fi
 
 # AC_CONFIG_FILES([po/Makefile])
 AC_CONFIG_FILES([test/check_cue.sh], [chmod +x test/check_cue.sh])
 AC_CONFIG_FILES([test/check_iso.sh], [chmod +x test/check_iso.sh])
 AC_CONFIG_FILES([test/check_nrg.sh], [chmod +x test/check_nrg.sh])
 AC_CONFIG_FILES([test/check_udf.sh], [chmod +x test/check_udf.sh])
+AC_CONFIG_FILES([test/check_iso_read.sh],
+		[chmod +x test/check_iso_read.sh])
 AC_OUTPUT
 
 AC_MSG_NOTICE([

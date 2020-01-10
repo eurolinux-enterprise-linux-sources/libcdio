@@ -13,7 +13,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-INCLUDES = $(LIBCDIO_CFLAGS) $(LIBISO9660_CFLAGS)
+AM_CPPFLAGS = $(LIBCDIO_CFLAGS) $(LIBISO9660_CFLAGS)
 DATA_DIR = $(abs_top_srcdir)/test/data
 
 abs_path_SOURCES   = abs_path.c
@@ -42,18 +42,25 @@ gnu_linux_SOURCES= helper.c gnu_linux.c
 gnu_linux_LDADD  = $(LIBCDIO_LIBS) $(LTLIBICONV)
 gnu_linux_CFLAGS = -DDATA_DIR=\"$(DATA_DIR)\"
 
+logger_LDADD     = $(LIBCDIO_LIBS) $(LTLIBICONV)
+logger_CFLAGS    = -DDATA_DIR=\"$(DATA_DIR)\"
+
 mmc_read_LDADD   = $(LIBCDIO_LIBS) $(LTLIBICONV)
 mmc_read_CFLAGS  = -DDATA_DIR=\"$(DATA_DIR)\"
 
 mmc_write_LDADD  = $(LIBCDIO_LIBS) $(LTLIBICONV)
 mmc_write_CFLAGS = -DDATA_DIR=\"$(DATA_DIR)\"
 
-nrg_SOURCES      = helper.c nrg.c 
+nrg_SOURCES      = helper.c nrg.c
 nrg_LDADD        = $(LIBCDIO_LIBS) $(LTLIBICONV)
 nrg_CFLAGS       = -DDATA_DIR=\"$(DATA_DIR)\"
 
 osx_LDADD        = $(LIBCDIO_LIBS) $(LTLIBICONV)
 osx_CFLAGS       = -DDATA_DIR=\"$(DATA_DIR)\"
+
+track_SOURCES      = track.c
+track_LDADD        = $(LIBCDIO_LIBS)
+track_CFLAGS       = -DDATA_DIR=\"$(DATA_DIR)\"
 
 solaris_LDADD    = $(LIBCDIO_LIBS) $(LTLIBICONV)
 solaris_CFLAGS   = -DDATA_DIR=\"$(DATA_DIR)\"
@@ -63,8 +70,8 @@ win32_CFLAGS     = -DDATA_DIR=\"$(DATA_DIR)\"
 
 check_PROGRAMS   = \
 	abs_path bincue cdda cdrdao freebsd gnu_linux \
-	mmc_read mmc_write nrg \
-	osx realpath solaris win32
+	logger mmc_read mmc_write nrg \
+	osx realpath solaris track win32
 
 TESTS = $(check_PROGRAMS)
 
@@ -73,7 +80,8 @@ EXTRA_DIST = \
 	helper.c    \
 	helper.h    \
 	cdrdao.c.in \
-	nrg.c.in
+	nrg.c.in    \
+	track.c.in
 
 MOSTLYCLEANFILES = \
 	$(check_PROGRAMS) \

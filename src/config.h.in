@@ -319,12 +319,12 @@
 /* Define 1 if you are compiling using MinGW */
 #undef MINGW32
 
+/* Define this if mingw-w64 headers are used */
+#undef MINGW_W64_HEADERS
+
 /* Define 1 if you need timezone defined to get timzone defined as a variable.
    In cygwin it is a function too */
 #undef NEED_TIMEZONEVAR
-
-/* Define to 1 if your C compiler doesn't accept -c and -o together. */
-#undef NO_MINUS_C_MINUS_O
 
 /* Name of package */
 #undef PACKAGE

@@ -4,8 +4,8 @@ libcdio.texi.
 This manual documents `libcdio', the GNU CD Input, Output, and Control
 Library.
 
-   Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008, 2010 Rocky
-Bernstein and Herbert Valerio Riedel.
+   Copyright (C) 2003-2008, 2010, 2012-2013 Rocky Bernstein and Herbert
+Valerio Riedel.
 
      Permission is granted to copy, distribute and/or modify this
      document under the terms of the GNU Free Documentation License,
@@ -28,8 +28,8 @@ GNU `libcdio'
 This manual documents `libcdio', the GNU CD Input, Output, and Control
 Library.
 
-Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008, 2010 Rocky Bernstein
-and Herbert Valerio Riedel.
+Copyright (C) 2003-2008, 2010, 2012-2013 Rocky Bernstein and Herbert
+Valerio Riedel.
 
      Permission is granted to copy, distribute and/or modify this
      document under the terms of the GNU Free Documentation License,
@@ -952,15 +952,11 @@ only in a time-like fashion), is generally more cumbersome to use an
 MSF rather than a LBA or LSN described below, since subtraction of two
 MSF's has the awkwardness akin to subtraction using Roman Numerals.
 
-Probably the simplest way to address a block is to use its _LSN_ or
-"logical sector number." This just numbers the blocks usually from 0
-on. _fix me: LSNs can be negative up to the pregap size?_ The Lead-in
-and Lead-out gaps described above have LSNs just like any other space
-on a CD. The last unit of address is a _LBA_. It is the same as a LSN
-but the 150 blocks associated with the initial lead-in is are not
-counted. So to convert a LBA into an LSN you just add 150. Why the
-distinction between LBA and LSN? I don't know, perhaps this has
-something to do with "multisession" CDs.
+A simpler way to address a block is to use a "Logical Sector Number"
+(_LSN_) or a "Logical Sector Number" (_LBA_). In the MMC-5 glossary
+these are synonymous terms. However historically it has been used
+differently. In libcdio, to convert a LBA into an LSN you just subtract
+150. Both LBA's and LSN's can be negative.
 
 ---------- Footnotes ----------
 
@@ -1116,6 +1112,7 @@ Utility Programs::.
 * Example 5::        list CD-Text and CD disc mode info
 * Example 6::        run a MMC INQUIRY command
 * Example 7::        using the CD Paranoia library for CD-DA reading
+* Example 8::        Setting output verbosity
 * All sample programs:: list of all programs in the example directory
 
 
@@ -1777,7 +1774,7 @@ about C Preprocessor symbols getting redefined in the `#include' of
 `<cdio.cdio.h>'.
 
 
-File: libcdio.info,  Node: Example 7,  Next: All sample programs,  Prev: Example 6,  Up: How to use
+File: libcdio.info,  Node: Example 7,  Next: Example 8,  Prev: Example 6,  Up: How to use
 
 7.8 Example 7: Using the CD Paranoia library for CD-DA reading
 ==============================================================
@@ -1878,7 +1875,6 @@ main(int argc, const char *argv[])
   }
 
   cdio_cdda_close(d);
-
   exit(0);
 }
 
@@ -1907,10 +1903,128 @@ be a problem with conflicting structure definitions like
 `cdrom_drive_t'.
 
 
-File: libcdio.info,  Node: All sample programs,  Prev: Example 7,  Up: How to use
+File: libcdio.info,  Node: Example 8,  Next: All sample programs,  Prev: Example 7,  Up: How to use
 
-7.9 A list of all sample programs in the `example' directory
-============================================================
+7.9 Example 8: Setting output verbosity
+=======================================
+
+Sometimes in tracking down a problem in your code or libcdio's you may
+want more information about what is going on inside the `libcdio'
+library.
+
+The setting global variable `cdio_loglevel_default' defined in header
+file `<cdio/logging.h>' controls the verbosity level. By default, only
+warnings, errors, and fatal errors are printed. However by setting this
+variable you can get either debug or informational messages, or cause
+the normal messages that appear to be suppressed.
+
+The verbosity levels defined in the library are from lowest number to
+highest are:
+
+``CDIO_LOG_DEBUG' (value 1)'
+     These are of a debugging nature and are give the most verbose
+     output.
+
+``CDIO_LOG_INFO' (value 2)'
+     These are informational message.
+
+``CDIO_LOG_WARN' (value 3)'
+     These are warning message. Not an error, per se, but something that
+     might be of concern.
+
+``CDIO_LOG_ERROR' (value 4)'
+     These are error messages that force program termination.
+
+``CDIO_LOG_ASSERT' (value 5)'
+     These are error messages that represent an internal inconsistency
+     in the `libcdio' library. In the absence of `libcdio' bugs, these
+     should never appear.
+
+
+Setting a lower or more verbose log level will cause higher-level
+messages to appear, but not those that are less than the set verbosity
+level. The "debug" level is the lowest. So setting
+`cdio_loglevel_default' to level causes all other levels of messages to
+be displayed. However setting the verbosity level to "warn" will cause
+debug and informational messages (lower level messages) to be ignored
+while still showing warning, error, and fatal error messages.
+
+Another thing that can be done is to write a custom log handler that
+will be used instead of `libcdio''s default handlers. Using this, you
+have complete control of how you want logging to be handled.
+
+Here is an example adapted from example program `logging.c'.
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <errno.h>
+#include <limits.h>
+#include <string.h>
+
+#include <cdio/cdio.h>
+#include <cdio/cd_types.h>
+#include <cdio/logging.h>
+
+/* Here is an example of a custom log handler. */
+static void
+custom_log_handler (cdio_log_level_t level, const char *message)
+{
+  switch(level) {
+  case CDIO_LOG_DEBUG:
+    printf("-- custom debug message: %s\n", message);
+    return;
+  case CDIO_LOG_INFO:
+    printf("-- custom info message: %s\n", message);
+    return;
+  case CDIO_LOG_WARN:
+    printf("-- custom warning message: %s\n", message);
+    return;
+  case CDIO_LOG_ERROR:
+    printf("-- custom error message: %s\n", message);
+    return;
+  case CDIO_LOG_ASSERT:
+    printf("-- custom fatal error message: %s\n", message);
+    return;
+  default:
+    printf("custom level %d message: %s\n", level, message);
+  }
+}
+
+static void
+print_drives()
+{
+    char **ppsz_cd_drives=NULL, **c;
+    /* Print out a list of CD-drives with the above set log level. */
+    ppsz_cd_drives = cdio_get_devices(DRIVER_DEVICE);
+    if (NULL != ppsz_cd_drives)
+	for( c = ppsz_cd_drives; *c != NULL; c++ ) {
+	    printf("-- Drive %s\n", *c);
+	}
+    cdio_free_device_list(ppsz_cd_drives);
+}
+
+int
+main(int argc, const char *argv[])
+{
+    /* Set the log level to the warning verbosity. */
+    cdio_loglevel_default = CDIO_LOG_WARN;
+
+    print_drives();
+
+    /* Do the same thing again but with a custom log handler. */
+    cdio_log_set_handler (custom_log_handler);
+
+    print_drives();
+    return 0;
+
+}
+
+
+File: libcdio.info,  Node: All sample programs,  Prev: Example 8,  Up: How to use
+
+7.10 A list of all sample programs in the `example' directory
+=============================================================
 
 The `example' directory contains some simple examples of the use of the
 `libcdio' library.
@@ -1967,6 +2081,10 @@ Descriptions of the sample are as follows...
 
 ``isofuzzy.c''
      A program showing fuzzy ISO-9660 detection/reading.
+
+``logging.c''
+     A program to show to to set log verbosity levels and how to write a
+     custom log handler.
 
 ``mmc1.c''
      A program to show issuing a simple MMC command (`INQUIRY').
@@ -3700,85 +3818,86 @@ General Index
 
 
 Tag Table:
-Node: Top832
-Node: History2246
-Node: Previous Work4279
-Ref: Previous Work-Footnote-18416
-Ref: Previous Work-Footnote-28539
-Node: Purpose8806
-Ref: Purpose-Footnote-113215
-Node: CD Formats13404
-Node: Red Book14196
-Node: CD Text15667
-Node: CDDB17630
-Node: Yellow Book19004
-Node: ISO 966019551
-Node: ISO 9660 Level 120388
-Node: ISO 9660 Level 221006
-Node: ISO 9660 Level 321279
-Node: Joliet Extensions22053
-Node: Rock Ridge Extensions23163
-Node: Mode 124101
-Node: Mode 224970
-Node: Green Book25983
-Node: White Book26745
-Node: CD Image Formats27678
-Node: CDRDAO TOC Format28962
-Node: CDRWIN BIN/CUE Format32355
-Node: NRG Format34098
-Node: CD Units34861
-Node: Tracks35120
-Node: Sectors36792
-Ref: Sectors-Footnote-140041
-Node: Pre-gaps40154
-Node: How to use47739
-Node: Include problem48903
-Ref: Include problem-Footnote-151631
-Node: Example 151769
-Node: Example 255427
-Node: Example 356867
-Node: Example 462330
-Node: Example 565013
-Node: Example 666868
-Node: Example 769460
-Node: All sample programs73895
-Node: Utility Programs77144
-Node: cd-drive77696
-Node: cd-info77935
-Node: cd-read78412
-Node: iso-info78735
-Node: iso-read78934
-Node: CD-ROM Access and Drivers79108
-Node: SCSI mess79633
-Node: Access Modes83587
-Node: Accessing Driver Parameters84764
-Node: GNU/Linux85614
-Node: Microsoft86292
-Node: Solaris87201
-Node: FreeBSD87666
-Node: OS X88164
-Node: Internal Program Organization88854
-Node: File Organization89142
-Node: Library Organization91103
-Node: libcdio91555
-Node: libcdio_cdda93165
-Node: libcdio_paranoia93441
-Node: libiso966093795
-Node: libudf94227
-Node: Programming Conventions94438
-Node: Coding Conventions94675
-Node: Namespace Conventions94986
-Node: ISO-9660 Character Sets97974
-Node: ISO646 d-Characters98289
-Node: ISO646 a-Characters98736
-Node: Glossary99183
-Ref: ASPI99459
-Ref: XA102981
-Ref: MMC109152
-Ref: models-profiles109717
-Ref: SCSI114631
-Ref: Glossary-Footnote-1119810
-Node: GNU Free Documentation License119984
-Node: General Index142341
+Node: Top818
+Node: History2218
+Node: Previous Work4251
+Ref: Previous Work-Footnote-18388
+Ref: Previous Work-Footnote-28511
+Node: Purpose8778
+Ref: Purpose-Footnote-113187
+Node: CD Formats13376
+Node: Red Book14168
+Node: CD Text15639
+Node: CDDB17602
+Node: Yellow Book18976
+Node: ISO 966019523
+Node: ISO 9660 Level 120360
+Node: ISO 9660 Level 220978
+Node: ISO 9660 Level 321251
+Node: Joliet Extensions22025
+Node: Rock Ridge Extensions23135
+Node: Mode 124073
+Node: Mode 224942
+Node: Green Book25955
+Node: White Book26717
+Node: CD Image Formats27650
+Node: CDRDAO TOC Format28934
+Node: CDRWIN BIN/CUE Format32327
+Node: NRG Format34070
+Node: CD Units34833
+Node: Tracks35092
+Node: Sectors36764
+Ref: Sectors-Footnote-139746
+Node: Pre-gaps39859
+Node: How to use47444
+Node: Include problem48654
+Ref: Include problem-Footnote-151382
+Node: Example 151520
+Node: Example 255178
+Node: Example 356618
+Node: Example 462081
+Node: Example 564764
+Node: Example 666619
+Node: Example 769211
+Node: Example 873635
+Node: All sample programs77246
+Node: Utility Programs80610
+Node: cd-drive81162
+Node: cd-info81401
+Node: cd-read81878
+Node: iso-info82201
+Node: iso-read82400
+Node: CD-ROM Access and Drivers82574
+Node: SCSI mess83099
+Node: Access Modes87053
+Node: Accessing Driver Parameters88230
+Node: GNU/Linux89080
+Node: Microsoft89758
+Node: Solaris90667
+Node: FreeBSD91132
+Node: OS X91630
+Node: Internal Program Organization92320
+Node: File Organization92608
+Node: Library Organization94569
+Node: libcdio95021
+Node: libcdio_cdda96631
+Node: libcdio_paranoia96907
+Node: libiso966097261
+Node: libudf97693
+Node: Programming Conventions97904
+Node: Coding Conventions98141
+Node: Namespace Conventions98452
+Node: ISO-9660 Character Sets101440
+Node: ISO646 d-Characters101755
+Node: ISO646 a-Characters102202
+Node: Glossary102649
+Ref: ASPI102925
+Ref: XA106447
+Ref: MMC112618
+Ref: models-profiles113183
+Ref: SCSI118097
+Ref: Glossary-Footnote-1123276
+Node: GNU Free Documentation License123450
+Node: General Index145807
 
 End Tag Table
