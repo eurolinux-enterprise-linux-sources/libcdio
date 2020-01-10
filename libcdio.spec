@@ -1,6 +1,6 @@
 Name: libcdio
 Version: 0.92
-Release: 1%{?dist}
+Release: 3%{?dist}
 Summary: CD-ROM input and control library
 Group: System Environment/Libraries
 License: GPLv3+
@@ -20,6 +20,13 @@ BuildRequires: gettext-devel
 BuildRequires: chrpath
 
 
+Patch0: CVE-2017-18201.patch
+#Following patches (1-4) also fix CVE-2017-18199
+Patch1: CVE-2017-18198-part1.patch
+Patch2: CVE-2017-18198-part2.patch
+Patch3: CVE-2017-18198-part3.patch
+Patch4: CVE-2017-18198-part4.patch
+
 %description
 This library provides an interface for CD-ROM access. It can be used
 by applications that need OS- and device-independent access to CD-ROM
@@ -36,6 +43,11 @@ This package contains header files and libraries for %{name}.
 
 %prep
 %setup -q
+%patch0 -p1
+%patch1 -p1
+%patch2 -p1
+%patch3 -p3
+%patch4 -p3
 
 f=src/cd-paranoia/doc/ja/cd-paranoia.1.in
 iconv -f euc-jp -t utf-8 -o $f.utf8 $f && mv $f.utf8 $f
@@ -140,6 +152,15 @@ fi
 
 
 %changelog
+* Mon Jun 18 2018 Jakub Martisko <jamartis@redhat.com> - 0.92-3
+- fix CVE-2017-18198 and CVE-2017-18199
+- Resolves: rhbz#1553769
+- Resolves: rhbz#1553604
+
+* Mon Jun 18 2018 Jakub Martisko <jamartis@redhat.com> - 0.92-2
+- fix CVE-2017-18201
+- Resolves: rhbz#1553621
+
 * Mon Dec 16 2013 Adrian Reber <adrian@lisas.de> - 0.92-1
 - updated to 0.92
 - Resolves: rhbz#1065642
